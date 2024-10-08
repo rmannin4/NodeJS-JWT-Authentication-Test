@@ -16,10 +16,8 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-//
 
 const PORT = 3000;
-
 
 const jwtMW = expressjwt({
     secret: secretKey,

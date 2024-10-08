@@ -48,6 +48,7 @@
                         localStorage.setItem('jwt', token);
                         const expirationTime = new Date().getTime() + 3 * 60 * 1000;
                         localStorage.setItem('tokenExpirationTime', expirationTime);
+                        history.pushState(null, null, '/dashboard');
                         getDashboard();
                     }
             })
@@ -65,6 +66,7 @@
                 }
             }).then(res => {
                 if (res && res.data && res.data.success) {
+                    history.pushState(null, null, '/dashboard');
                     document.querySelector('h1.row').innerHTML = 'Dashboard';
                     document.querySelector('main').innerHTML = res.data.myContent;
                 }  else {
@@ -74,60 +76,113 @@
                 console.error('Error fetching dashboard:', err);
                 handleExpiredToken();
             });
-        }//
+        }
       
         function getSettings() {
             const token = localStorage.getItem('jwt');
             axios.get('/api/settings', {
                 headers: {
                     'Authorization': `Bearer ${token}`
-                }
-            }).then(res => {
-                if (res && res.data && res.data.success) {
-                    history.pushState(null, null, '/settings'); 
-                    document.querySelector('h1.row').innerHTML = 'Settings';
-                    document.querySelector('main').innerHTML = res.data.myContent;
-                }else {
-                    handleExpiredToken();
-                }
-            }).catch(err => {
-                console.error('Error fetching settings:', err);
-                handleExpiredToken();
-            });
-        }
-      
-       // function handleExpiredToken() {
-       //     localStorage.removeItem('jwt');
-       //     localStorage.removeItem('tokenExpirationTime');
-       //     alert('Session expired. Redirecting to login.');
-       //     window.location.href = '/';
-       // }
-
-       function handleExpiredToken() {
-    const token = localStorage.getItem('jwt');
-    const expirationTime = localStorage.getItem('tokenExpirationTime');
-    const currentTime = new Date().getTime();
-
-    if (!token || !expirationTime || currentTime > expirationTime) {
-        localStorage.removeItem('jwt');
-        localStorage.removeItem('tokenExpirationTime');
-        window.location.href = '/'; 
-    }
-}
-
-        function onLoad() {
-            const token = localStorage.getItem('jwt');
-            const expirationTime = localStorage.getItem('tokenExpirationTime');
-            const currentTime = new Date().getTime();
-
-            if (token && expirationTime && currentTime < expirationTime) {
-                getDashboard();
+            }
+        }).then(res => {
+            if (res && res.data && res.data.success) {
+                history.pushState(null, null, '/settings'); 
+                document.querySelector('h1.row').innerHTML = 'Settings';
+                document.querySelector('main').innerHTML = res.data.myContent;
             } else {
                 handleExpiredToken();
             }
+        }).catch(err => {
+            console.error('Error fetching settings:', err);
+            handleExpiredToken();
+        });
         }
-        onLoad();
-    </script>
 
+
+        function handleExpiredToken() {
+            const currentPath = window.location.pathname;
+            const token = localStorage.getItem('jwt');
+            const expirationTime = localStorage.getItem('tokenExpirationTime');
+            const currentTime = new Date().getTime();
+            if (currentPath === '/') {
+                console.warn('Token expired, but already on the login page.');
+                return;
+            }
+            if (!token || !expirationTime || currentTime > expirationTime) {
+                localStorage.removeItem('jwt');
+                localStorage.removeItem('tokenExpirationTime');
+                window.location.href = '/'; 
+            } else {
+                alert('Session expired. Please log in again.');
+                localStorage.removeItem('jwt');
+                localStorage.removeItem('tokenExpirationTime');
+                window.location.href = '/'; 
+            }
+        } 
+
+       window.onpopstate = function(event) {
+            const currentPath = window.location.pathname;
+            if (currentPath === '/dashboard') {
+                getDashboard();
+            } else if (currentPath === '/settings') {
+                getSettings();
+            } else {
+                document.querySelector('h1.row').innerHTML = 'Login here';
+                document.querySelector('main').innerHTML = `
+                    <div class="row">
+                        <label for="username">Username</label>
+                        <input type="text" name="username" id="username">
+                    </div>
+                    <div class="row">
+                        <label for="password">password</label>
+                        <input type="password" name="password" id="password">
+                    </div>
+                    <div>
+                        <button onClick="login()">Login</button>
+                        <button onClick="getDashboard()">Get Dashboard</button>
+                        <button onClick="getSettings()">Settings</button>
+                    </div>
+                `;
+            }
+        };
+
+        function onLoad() {
+            const currentPath = window.location.pathname;
+            const protectedRoutes = ['/dashboard', '/settings'];
+                if (protectedRoutes.includes(currentPath)) {
+                    const token = localStorage.getItem('jwt');
+                    const expirationTime = localStorage.getItem('tokenExpirationTime');
+                    const currentTime = new Date().getTime();
+                if (token && expirationTime && currentTime < expirationTime) {
+                    if (currentPath === '/dashboard') {
+                        getDashboard();
+                    } else if (currentPath === '/settings') {
+                        getSettings();
+                    }
+                    } else {
+                        handleExpiredToken();
+                    }
+                    } else {
+                        document.querySelector('h1.row').innerHTML = 'Login here';
+                        document.querySelector('main').innerHTML = `
+                            <div class="row">
+                            <label for="username">Username</label>
+                            <input type="text" name="username" id="username">
+                            </div>
+                            <div class="row">
+                            <label for="password">password</label>
+                            <input type="password" name="password" id="password">
+                            </div>
+                            <div>
+                                <button onClick="login()">Login</button>
+                                <button onClick="getDashboard()">Get Dashboard</button>
+                                <button onClick="getSettings()">Settings</button>
+                            </div>`;
+                        }
+            }
+            onLoad(); 
+    
+    </script>
+       
 </body>
 </html>
